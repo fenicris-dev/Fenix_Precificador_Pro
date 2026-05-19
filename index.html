@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fênix Precificador v4.1</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#041273">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Precificador">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- ═══════════ ONBOARDING ═══════════ -->
+<div class="onboard-ov" id="onboard_ov" style="display:none">
+  <div class="onboard-card">
+    <div class="ob-step-ind">
+      <div class="ob-dot active" id="ob_d0"></div>
+      <div class="ob-dot" id="ob_d1"></div>
+      <div class="ob-dot" id="ob_d2"></div>
+      <div class="ob-dot" id="ob_d3"></div>
+    </div>
+    <div id="ob_content"></div>
+  </div>
+</div>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="site-header">
+  <div class="logo-wrap">
+    <div class="logo-icon">🔥</div>
+    <div class="logo-text">
+      <h1>Fênix</h1>
+      <span>Precificação Inteligente</span>
+    </div>
+    <span class="badge-v">v4.1</span>
+  </div>
+  <div class="header-actions">
+    <!-- Seletor de empresa -->
+    <div class="empresa-selector">
+      <i class="fa-solid fa-building"></i>
+      <select id="empresa_select" onchange="trocarEmpresa(this.value)"></select>
+      <button onclick="adicionarEmpresa()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.7);font-size:.8rem;padding:0 2px" title="Nova empresa"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    <button class="hbtn" onclick="abrirArquivo()">
+      <i class="fa-solid fa-database"></i> OS <span class="bcnt" id="badge_cnt"></span>
+    </button>
+    <button class="hbtn" onclick="abrirRelatorio()">
+      <i class="fa-solid fa-chart-bar"></i> Relatório
+    </button>
+    <button class="hbtn" onclick="abrirSidebar('geral')">
+      <i class="fa-solid fa-sliders"></i> Configurações
+    </button>
+    <button class="hbtn" onclick="toggleDark()" id="btn_dark">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+  </div>
+</header>
+
+<div class="main-wrapper">
+
+  <!-- ═══════════ DASHBOARD STRIP ═══════════ -->
+  <div class="dashboard-strip">
+    <div class="dash-card">
+      <div class="dash-icon" style="background:rgba(41,128,185,.1);color:#2980b9"><i class="fa-solid fa-chart-line"></i></div>
+      <div>
+        <div class="dash-val" id="dash_fat">R$ 0</div>
+        <div class="dash-lbl">Fat. do Mês</div>
+      </div>
+      <div class="dash-sem" id="sem_meta" title="Meta de faturamento"></div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-icon" style="background:rgba(142,68,173,.1);color:#8e44ad"><i class="fa-solid fa-file-invoice"></i></div>
+      <div>
+        <div class="dash-val" id="dash_os">0</div>
+        <div class="dash-lbl">OS no Mês</div>
+      </div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-icon" style="background:rgba(39,174,96,.1);color:#27ae60"><i class="fa-solid fa-piggy-bank"></i></div>
+      <div>
+        <div class="dash-val" id="dash_lucro">R$ 0</div>
+        <div class="dash-lbl">Lucro do Mês</div>
+      </div>
+      <div class="dash-sem" id="sem_fixos" title="Cobertura de custos fixos"></div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-icon" style="background:rgba(231,76,60,.1);color:#e74c3c"><i class="fa-solid fa-percent"></i></div>
+      <div>
+        <div class="dash-val" id="dash_margem">0%</div>
+        <div class="dash-lbl">Margem Média</div>
+      </div>
+      <div class="dash-sem" id="sem_margem" title="Saúde da margem"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CARD 1 — INPUTS ═══════════ -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-hicon hicon-blue"><i class="fa-solid fa-sliders"></i></div>
+      <h3>Configuração da OS</h3>
+    </div>
+
+    <!-- Identificação -->
+    <div class="os-section">
+      <div class="sec-title"><i class="fa-solid fa-file-invoice"></i> Identificação</div>
+      <div class="os-grid">
+        <div class="fg">
+          <label><i class="fa-solid fa-calendar-days"></i> Data</label>
+          <input type="date" id="os_data" oninput="liveCalc()">
+        </div>
+        <div class="fg">
+          <label><i class="fa-solid fa-hashtag"></i> Nº da OS</label>
+          <input type="text" id="os_num" placeholder="2026-001" oninput="liveCalc()">
+          <div class="field-error" id="err_os"><i class="fa-solid fa-circle-exclamation"></i> Obrigatório</div>
+        </div>
+        <div class="fg">
+          <label><i class="fa-solid fa-user"></i> Cliente <span class="opt">(opcional)</span></label>
+          <input type="text" id="cliente" placeholder="Nome completo" oninput="liveCalc()">
+        </div>
+        <div class="fg">
+          <label><i class="fa-solid fa-mobile-screen-button"></i> WhatsApp <span class="opt">(opcional)</span></label>
+          <input type="tel" id="cliente_tel" placeholder="(00) 00000-0000" oninput="maskTel(this);liveCalc()">
+        </div>
+        <div class="fg" style="grid-column:1/-1">
+          <label><i class="fa-solid fa-note-sticky"></i> Descrição <span class="opt">(opcional)</span></label>
+          <textarea id="os_desc" placeholder="Descreva o serviço ou produto..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPO 1: CUSTO DIRETO -->
+    <div class="grupo grupo-cd aberto" id="g_cd">
+      <div class="grupo-header" onclick="toggleGrupo('g_cd')">
+        <div class="grupo-icon"><i class="fa-solid fa-box-open"></i></div>
+        <span class="grupo-title">Custo Direto</span>
+        <span class="grupo-subtotal" id="sub_cd">R$ 0,00</span>
+        <i class="fa-solid fa-chevron-down grupo-chevron"></i>
+      </div>
+      <div class="grupo-body">
+        <!-- Alerta recompra de capital -->
+        <div class="recompra-alert" id="recompra_alert">
+          <i class="fa-solid fa-rotate-left" style="color:#b7770d;flex-shrink:0"></i>
+          <span>Lembre-se: <strong id="recompra_val">R$ 0,00</strong> do CMV precisa retornar ao caixa para recompra do produto/estoque.</span>
+        </div>
+
+        <!-- CMV -->
+        <div class="form-row">
+          <label><i class="fi fa-solid fa-box"></i> Produto / Mercadoria (CMV)</label>
+          <div class="right">
+            <input type="text" id="cmv" placeholder="R$ 0,00" oninput="maskMoney(this);liveCalc()">
+            <button class="comis-tag" id="tag_cmv" onclick="toggleComisBase('cmv')">
+              <i class="fa-solid fa-circle-plus ct-off"></i><i class="fa-solid fa-circle-check ct-on"></i> Comissão
+            </button>
+            <button class="tip-btn" tabindex="-1"><i class="fa-solid fa-circle-question"></i>
+              <div class="tip-pop">Custo de Mercadoria Vendida. Ative "Comissão" se houver indicação sobre este item.</div>
+            </button>
+          </div>
+        </div>
+        <div class="field-error" id="err_custo" style="margin-left:160px;margin-bottom:6px">
+          <i class="fa-solid fa-circle-exclamation"></i> Informe ao menos CMV ou Mão de Obra
+        </div>
+
+        <!-- MOB Toggle -->
+        <div class="mob-toggle">
+          <button class="mob-tab active" data-tipo="terceirizada" onclick="setMobTipo('terceirizada')">
+            <i class="fa-solid fa-user-group"></i> Mão de Obra Terceirizada
+          </button>
+          <button class="mob-tab" data-tipo="propria" onclick="setMobTipo('propria')">
+            <i class="fa-solid fa-user-tie"></i> Mão de Obra Própria
+          </button>
+        </div>
+        <div class="mob-info" id="mob_info">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Mão de obra própria é rateada como pró-labore no Custo Indireto — o valor será somado lá automaticamente.</span>
+        </div>
+
+        <!-- Mão de Obra -->
+        <div class="form-row">
+          <label><i class="fi fa-solid fa-person-digging"></i> Mão de Obra</label>
+          <div class="right">
+            <input type="text" id="mob" placeholder="R$ 0,00" oninput="maskMoney(this);liveCalc()">
+            <button class="comis-tag" id="tag_mob" onclick="toggleComisBase('mob')">
+              <i class="fa-solid fa-circle-plus ct-off"></i><i class="fa-solid fa-circle-check ct-on"></i> Comissão
+            </button>
+            <button class="tip-btn" tabindex="-1"><i class="fa-solid fa-circle-question"></i>
+              <div class="tip-pop">Terceirizada: custo direto com possível comissão.<br>Própria: vai para pró-labore rateado no Custo Indireto.</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Insumos -->
+        <div class="form-row" style="margin-bottom:0">
+          <label><i class="fi fa-solid fa-flask"></i> Insumos / Consumíveis</label>
+          <div class="right">
+            <input type="text" id="insumos" placeholder="R$ 0,00" oninput="maskMoney(this);liveCalc()">
+            <button class="tip-btn" tabindex="-1"><i class="fa-solid fa-circle-question"></i>
+              <div class="tip-pop">Materiais consumidos na entrega: estanho, pasta de solda, tinta, embalagem, luvas etc.</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPO 2: CUSTO INDIRETO -->
+    <div class="grupo grupo-ci" id="g_ci">
+      <div class="grupo-header" onclick="toggleGrupo('g_ci')">
+        <div class="grupo-icon"><i class="fa-solid fa-building"></i></div>
+        <span class="grupo-title">Custo Indireto <span style="font-weight:400;font-size:.85em;opacity:.7">(rateado por OS)</span></span>
+        <span class="grupo-subtotal" id="sub_ci">R$ 0,00</span>
+        <i class="fa-solid fa-chevron-down grupo-chevron"></i>
+      </div>
+      <div class="grupo-body">
+        <div class="rateio-hint">
+          <i class="fa-solid fa-lightbulb"></i>
+          <span>Rateio automático das despesas fixas: <strong id="rateio_hint_val">R$ 0,00</strong>/OS
+          (baseado em <strong id="hint_os_mes">20</strong> OS/mês).
+          Deixe em branco para usar o rateio automático, ou preencha manualmente.</span>
+        </div>
+        <div class="form-row">
+          <label><i class="fi fa-solid fa-plug"></i> Infraestrutura</label>
+          <div class="right">
+            <input type="text" id="infra" placeholder="Automático" oninput="maskMoney(this);liveCalc()">
+            <button class="tip-btn" tabindex="-1"><i class="fa-solid fa-circle-question"></i>
+              <div class="tip-pop">Aluguel, energia, água, internet rateados por OS. Configure as despesas fixas em Configurações para rateio automático.</div>
+            </button>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label><i class="fi fa-solid fa-user-tie"></i> Pró-labore rateado</label>
+          <div class="right">
+            <input type="text" id="prolabore" placeholder="Automático" oninput="maskMoney(this);liveCalc()">
+            <button class="tip-btn" tabindex="-1"><i class="fa-solid fa-circle-question"></i>
+              <div class="tip-pop">Quanto o dono custa por OS. Configure em Configurações > Despesas para rateio automático.</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPO 3: ENCARGOS COMERCIAIS -->
+    <div class="grupo grupo-ce" id="g_ce">
+      <div class="grupo-header" onclick="toggleGrupo('g_ce')">
+        <div class="grupo-icon"><i class="fa-solid fa-handshake"></i></div>
+        <span class="grupo-title">Encargos Comerciais</span>
+        <span class="grupo-subtotal" id="sub_ce">R$ 0,00</span>
+        <i class="fa-solid fa-chevron-down grupo-chevron"></i>
+      </div>
+      <div class="grupo-body">
+        <div class="comis-base-info" id="comis_base_info">
+          <span style="display:flex;align-items:center;gap:6px;font-weight:500">
+            <i class="fa-solid fa-bullseye"></i> Base de cálculo:
+          </span>
+          <span style="font-weight:700;font-family:'Syne',sans-serif" id="comis_base_val">R$ 0,00</span>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label><i class="fi fa-solid fa-user-tag"></i> Comissão de Indicação</label>
+          <div class="right">
+            <input type="text" id="comis_val" placeholder="0,00" oninput="maskDec(this);liveCalc()">
+            <button class="toggle-btn active" id="btn_comis" onclick="toggle('comis')">%</button>
+            <button class="tip-btn" tabindex="-1"><i class="fa-solid fa-circle-question"></i>
+              <div class="tip-pop">Comissão paga ao indicador. Ative "Comissão" nos itens do Custo Direto para definir a base de cálculo.</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPO 4: TRIBUTAÇÃO -->
+    <div class="grupo grupo-ct aberto" id="g_ct">
+      <div class="grupo-header" onclick="toggleGrupo('g_ct')">
+        <div class="grupo-icon"><i class="fa-solid fa-landmark"></i></div>
+        <span class="grupo-title">Impostos | Fatia do Sócio <em style="font-style:normal;opacity:.7">"Governo"</em></span>
+        <span class="grupo-subtotal" id="sub_ct">R$ 0,00</span>
+        <i class="fa-solid fa-chevron-down grupo-chevron"></i>
+      </div>
+      <div class="grupo-body">
+        <div class="regime-tabs">
+          <button class="rtab" id="tab_mei"     onclick="setRegime('mei')">MEI</button>
+          <button class="rtab active" id="tab_simples" onclick="setRegime('simples')">Simples</button>
+          <button class="rtab" id="tab_carneo"  onclick="setRegime('carneo')">Carnê-Leão</button>
+          <button class="rtab" id="tab_manual"  onclick="setRegime('manual')">Manual</button>
+        </div>
+        <div class="aliq-row">
+          <div class="aliq-chip">
+            <span class="acl">Produto / Venda</span>
+            <input class="aliq-edit" id="aliq_prod_edit" value="4.00" type="number" min="0" max="100" step="0.01"
+                   oninput="SIMPLES_ALIQ.prod=parseFloat(this.value)||0;if(el('cfg_aliq_prod'))el('cfg_aliq_prod').value=this.value;liveCalc()" style="display:none">
+            <span class="acv" id="aliq_prod_lbl">4,00%</span>
+          </div>
+          <div class="aliq-chip">
+            <span class="acl">Serviço</span>
+            <input class="aliq-edit" id="aliq_serv_edit" value="6.00" type="number" min="0" max="100" step="0.01"
+                   oninput="SIMPLES_ALIQ.serv=parseFloat(this.value)||0;if(el('cfg_aliq_serv'))el('cfg_aliq_serv').value=this.value;liveCalc()" style="display:none">
+            <span class="acv" id="aliq_serv_lbl">6,00%</span>
+          </div>
+          <div class="aliq-chip">
+            <span class="acl">Alíquota efetiva</span>
+            <span class="acv" id="aliq_ef">—</span>
+          </div>
+        </div>
+        <div class="regime-alert" id="regime_alert">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="regime_alert_txt"></span>
+        </div>
+        <div class="imposto-manual oculto" id="imposto_manual_row">
+          <div class="form-row" style="margin-bottom:0">
+            <label><i class="fi fa-solid fa-percent"></i> Alíquota manual (%)</label>
+            <div class="right">
+              <input type="text" id="imposto_manual" placeholder="0,00" oninput="maskDec(this);liveCalc()">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPO 5: LUCRO -->
+    <div class="grupo grupo-cm aberto" id="g_cm">
+      <div class="grupo-header" onclick="toggleGrupo('g_cm')">
+        <div class="grupo-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <span class="grupo-title">Lucro Desejado</span>
+        <span class="grupo-subtotal" id="sub_cm">R$ 0,00</span>
+        <i class="fa-solid fa-chevron-down grupo-chevron"></i>
+      </div>
+      <div class="grupo-body">
+        <div class="form-row" style="margin-bottom:0">
+          <label><i class="fi fa-solid fa-sack-dollar"></i> Margem de Lucro</label>
+          <div class="right">
+            <input type="text" id="lucro_val" placeholder="0,00" oninput="maskDec(this);liveCalc()">
+            <button class="toggle-btn active" id="btn_lucro" onclick="toggle('lucro')">%</button>
+            <button class="tip-btn" tabindex="-1"><i class="fa-solid fa-circle-question"></i>
+              <div class="tip-pop">% aplica sobre o preço final (markup reverso). R$ é valor fixo adicionado ao custo total.</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="custo-bar">
+      <span><i class="fa-solid fa-sigma"></i> Custo Total Apurado</span>
+      <span class="ctv" id="custo_total_live">R$ 0,00</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="resetForm()"><i class="fa-solid fa-rotate-left"></i> Limpar</button>
+      <button class="btn btn-primary" onclick="calcular()"><i class="fa-solid fa-calculator"></i> Calcular Preço</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ CARD 2 — ANÁLISE ═══════════ -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-hicon hicon-green"><i class="fa-solid fa-chart-pie"></i></div>
+      <h3>Painel de Análise</h3>
+    </div>
+
+    <div class="preview-os">
+      <div class="pv-row">
+        <i class="fa-solid fa-hashtag"></i>
+        <span>OS: <strong id="pv_os">—</strong></span>
+        <span style="margin-left:auto;font-size:.72rem">
+          <i class="fa-solid fa-calendar-days" style="margin-right:4px"></i><strong id="pv_data">—</strong>
+        </span>
+      </div>
+      <div class="pv-row"><i class="fa-solid fa-user"></i><span>Cliente: <strong id="pv_cliente">—</strong></span></div>
+    </div>
+
+    <div class="price-block">
+      <div class="pl"><i class="fa-solid fa-tag"></i> Preço Sugerido ao Cliente</div>
+      <div class="pv" id="res_total">R$ —,——</div>
+      <div class="pi" id="res_info">Preencha os dados para calcular</div>
+    </div>
+
+    <div class="skel-rows" id="live_rows"></div>
+
+    <div id="breakdown_wrap" style="display:none">
+
+      <!-- Gráfico pizza -->
+      <div class="pie-wrap" id="pie_wrap">
+        <svg class="pie-svg" id="pie_svg" width="120" height="120" viewBox="0 0 120 120"></svg>
+        <div class="pie-legend" id="pie_legend"></div>
+      </div>
+
+      <div id="breakdown_list"></div>
+
+      <!-- Simulador -->
+      <div class="panel">
+        <div class="panel-title" style="background:linear-gradient(90deg,rgba(142,68,173,.1),rgba(142,68,173,.04));color:#6c3483;border-bottom-color:rgba(142,68,173,.2)">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Simulador de Cenários
+        </div>
+        <div class="sim-body">
+          <div class="sim-row">
+            <label>Se o CMV subir</label>
+            <input type="number" id="sim_cmv" value="10" min="-50" max="200" oninput="simularCenario()">
+            <span style="font-size:.8rem;color:var(--gt)">%</span>
+          </div>
+          <div class="sim-row">
+            <label>Se o lucro mudar para</label>
+            <input type="number" id="sim_lucro" placeholder="%" min="0" max="100" oninput="simularCenario()">
+            <span style="font-size:.8rem;color:var(--gt)">%</span>
+          </div>
+          <div class="sim-result">
+            <div class="srt" id="sim_preco">—</div>
+            <div class="srd" id="sim_desc">Configure os parâmetros acima</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparativo tributário -->
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-title" style="background:linear-gradient(90deg,rgba(243,156,18,.1),rgba(243,156,18,.04));color:#b7770d;border-bottom-color:rgba(243,156,18,.2)">
+          <i class="fa-solid fa-scale-balanced"></i> Comparativo de Regimes Tributários
+        </div>
+        <div class="comp-grid">
+          <div class="comp-col" id="comp_mei">
+            <div class="comp-col-h" style="color:#e67e22"><i class="fa-solid fa-store"></i> MEI</div>
+            <div class="comp-row"><span>Custo fixo/mês</span><span id="cp_mei_imp">—</span></div>
+            <div class="comp-row"><span>Imposto por OS</span><span style="color:var(--acc);font-weight:700">R$ 0,00</span></div>
+            <div class="comp-row"><span>Custos totais</span><span id="cp_mei_custo">—</span></div>
+            <div class="comp-sobra">
+              <div><div class="comp-sobra-lbl">Sobra por OS</div><div id="cp_mei_badge"></div></div>
+              <div class="comp-sobra-val" id="cp_mei_sobra">—</div>
+            </div>
+          </div>
+          <div class="comp-col" id="comp_simples">
+            <div class="comp-col-h" style="color:#2980b9"><i class="fa-solid fa-building"></i> Simples</div>
+            <div class="comp-row"><span>Imp. produto</span><span id="cp_sim_imp_p">—</span></div>
+            <div class="comp-row"><span>Imp. serviço</span><span id="cp_sim_imp_s">—</span></div>
+            <div class="comp-row"><span>Custos totais</span><span id="cp_sim_custo">—</span></div>
+            <div class="comp-sobra">
+              <div><div class="comp-sobra-lbl">Sobra Líquida</div><div id="cp_sim_badge"></div></div>
+              <div class="comp-sobra-val" id="cp_sim_sobra">—</div>
+            </div>
+          </div>
+          <div class="comp-col" id="comp_carneo">
+            <div class="comp-col-h" style="color:#c0392b"><i class="fa-solid fa-user"></i> Carnê-Leão</div>
+            <div class="comp-row"><span>Alíquota efetiva</span><span id="cp_car_aliq">—</span></div>
+            <div class="comp-row"><span>Imposto estimado</span><span id="cp_car_imp">—</span></div>
+            <div class="comp-row"><span>Custos totais</span><span id="cp_car_custo">—</span></div>
+            <div class="comp-sobra">
+              <div><div class="comp-sobra-lbl">Sobra Líquida</div><div id="cp_car_badge"></div></div>
+              <div class="comp-sobra-val" id="cp_car_sobra">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="comp-nota">⚠️ MEI: custo fixo mensal, não incide por OS. Sobra MEI = lucro sem imposto por OS. Gerencie o custo fixo MEI no fluxo de caixa mensal.</div>
+      </div>
+
+      <!-- Destino do Lucro -->
+      <div class="panel" id="destino_panel" style="margin-top:14px;display:none">
+        <div class="panel-title" style="background:linear-gradient(90deg,rgba(39,174,96,.1),rgba(39,174,96,.04));color:#1e8449;border-bottom-color:rgba(39,174,96,.2)">
+          <i class="fa-solid fa-piggy-bank"></i> Destino do Lucro Real
+        </div>
+        <div style="padding:12px 14px" id="destino_body"></div>
+      </div>
+
+      <!-- Ponto de Equilíbrio -->
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-title" style="background:linear-gradient(90deg,rgba(41,128,185,.1),rgba(41,128,185,.04));color:#1a5276;border-bottom-color:rgba(41,128,185,.2)">
+          <i class="fa-solid fa-scale-unbalanced-flip"></i> Ponto de Equilíbrio
+        </div>
+        <div class="pe-body">
+          <div class="pe-stat"><div class="psv" id="pe_os_mes">—</div><div class="psl">OS/mês p/ cobrir fixos</div></div>
+          <div class="pe-stat"><div class="psv" id="pe_fat_min">—</div><div class="psl">Faturamento mínimo/mês</div></div>
+          <div class="pe-stat"><div class="psv" id="pe_margem_min">—</div><div class="psl">Margem mínima aceitável</div></div>
+          <div class="pe-stat"><div class="psv" id="pe_preco_min">—</div><div class="psl">Preço mínimo (sem lucro)</div></div>
+        </div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="action-btns">
+        <button class="btn btn-dup"  onclick="salvarTemplate()"><i class="fa-solid fa-clone"></i> Template</button>
+        <button class="btn btn-dup"  onclick="duplicarOS()"><i class="fa-solid fa-copy"></i> Duplicar</button>
+        <button class="btn btn-save" onclick="salvarOS()"><i class="fa-solid fa-floppy-disk"></i> Salvar OS</button>
+        <button class="btn btn-pdf"  onclick="gerarPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        <button class="btn btn-wpp"  onclick="enviarWhatsApp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-wrapper -->
+<footer>© Cristiano Fênix — 2026 &nbsp;|&nbsp; Fênix Soluções Tecnológicas</footer>
+
+<!-- ═══════════ SIDEBAR CONFIGURAÇÕES ═══════════ -->
+<div class="sidebar-overlay" id="sidebar_ov" onclick="fecharSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-hdr">
+    <h2><i class="fa-solid fa-sliders" style="color:var(--p)"></i> Configurações</h2>
+    <button class="sidebar-x" onclick="fecharSidebar()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="sidebar-tabs">
+    <button class="stab active" onclick="switchStab('geral')">⚙️ Geral</button>
+    <button class="stab" onclick="switchStab('despesas')">💸 Despesas</button>
+    <button class="stab" onclick="switchStab('contas')">📊 Contas</button>
+    <button class="stab" onclick="switchStab('metas')">🎯 Metas</button>
+    <button class="stab" onclick="switchStab('templates')">📋 Templates</button>
+    <button class="stab" onclick="switchStab('empresa')">🏢 Empresa</button>
+  </div>
+  <div class="sidebar-body">
+
+    <!-- GERAL -->
+    <div id="stab_geral">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-gauge"></i> Parâmetros Operacionais</div>
+        <div class="sb-row"><label>OS por mês (média)</label><input type="number" id="cfg_os_mes" min="1" max="500" value="20" oninput="salvarConfigAtual();liveCalc()"></div>
+        <div class="sb-row"><label>Margem mínima aceitável (%)</label><input type="number" id="cfg_margem_min" min="0" max="100" value="15" oninput="salvarConfigAtual()"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-landmark"></i> Simples Nacional — Alíquotas</div>
+        <div class="sb-row"><label>Produto / Comércio (%)</label><input type="number" id="cfg_aliq_prod" min="0" max="100" step="0.01" value="4" oninput="SIMPLES_ALIQ.prod=parseFloat(this.value)||0;if(el('aliq_prod_edit'))el('aliq_prod_edit').value=this.value;salvarConfigAtual();liveCalc()"></div>
+        <div class="sb-row"><label>Serviço (%)</label><input type="number" id="cfg_aliq_serv" min="0" max="100" step="0.01" value="6" oninput="SIMPLES_ALIQ.serv=parseFloat(this.value)||0;if(el('aliq_serv_edit'))el('aliq_serv_edit').value=this.value;salvarConfigAtual();liveCalc()"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-moon"></i> Aparência</div>
+        <div class="sb-row"><label>Modo Escuro</label><button class="toggle-btn" id="dark_toggle_btn" onclick="toggleDark()" style="flex:0 0 auto">🌙 Ativar</button></div>
+      </div>
+    </div>
+
+    <!-- DESPESAS -->
+    <div id="stab_despesas" style="display:none">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-lock"></i> Despesas Fixas Mensais</div>
+        <p style="font-size:.75rem;color:var(--gt);margin-bottom:10px;line-height:1.5">Preencha os valores mensais. O sistema rateará automaticamente por OS.</p>
+        <div id="despesas_fixas_list"></div>
+        <div class="dep-total">
+          <span>Total Fixo Mensal:</span><span id="dep_total_fixas">R$ 0,00</span>
+        </div>
+        <div class="dep-total" style="margin-top:4px;background:rgba(22,160,133,.06);border-color:rgba(22,160,133,.15)">
+          <span style="color:var(--ci)">Custo Fixo por OS:</span><span id="dep_por_os" style="color:var(--ci)">R$ 0,00</span>
+        </div>
+        <div class="dep-total" style="margin-top:4px;background:rgba(4,18,115,.04)">
+          <span>Custo Fixo Anual:</span><span id="dep_total_anual">R$ 0,00</span>
+        </div>
+        <button class="add-dep-btn" onclick="adicionarDespesaFixa()"><i class="fa-solid fa-plus"></i> Adicionar despesa fixa</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-arrows-up-down"></i> Despesas Variáveis</div>
+        <p style="font-size:.75rem;color:var(--gt);margin-bottom:10px;line-height:1.5">Despesas que variam conforme o volume de vendas.</p>
+        <div id="despesas_var_list"></div>
+        <button class="add-dep-btn" onclick="adicionarDespesaVar()"><i class="fa-solid fa-plus"></i> Adicionar despesa variável</button>
+      </div>
+    </div>
+
+    <!-- PLANO DE CONTAS -->
+    <div id="stab_contas" style="display:none">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-list-check"></i> Destino do Lucro</div>
+        <p style="font-size:.75rem;color:var(--gt);margin-bottom:10px;line-height:1.5">
+          Defina para onde vai cada parte do lucro. O saldo não alocado será distribuído automaticamente entre <strong>Reserva de Emergência</strong> e <strong>Crescimento da Empresa</strong>.
+        </p>
+        <div id="contas_list"></div>
+        <div class="conta-total-bar" id="contas_total_bar">
+          <span>Total alocado:</span><span id="contas_total_pct">0%</span>
+        </div>
+        <div id="contas_sobra_info" style="font-size:.72rem;color:var(--acc);margin-top:6px;padding:6px 8px;background:rgba(39,174,96,.08);border-radius:6px;display:none"></div>
+        <button class="add-conta-btn" onclick="addConta()"><i class="fa-solid fa-plus"></i> Adicionar categoria</button>
+      </div>
+    </div>
+
+    <!-- METAS -->
+    <div id="stab_metas" style="display:none">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-bullseye"></i> Metas Mensais</div>
+        <p style="font-size:.75rem;color:var(--gt);margin-bottom:10px;line-height:1.5">Defina suas metas. O Relatório mostrará o % de atingimento.</p>
+        <div class="sb-row" style="flex-direction:column;align-items:flex-start;gap:5px">
+          <label style="flex:none">Meta de Faturamento</label>
+          <input type="text" id="meta_fat" placeholder="R$ 0,00" oninput="maskMoney(this);salvarConfigAtual()">
+        </div>
+        <div class="sb-row" style="flex-direction:column;align-items:flex-start;gap:5px;margin-top:8px">
+          <label style="flex:none">Meta de OS por mês</label>
+          <input type="number" id="meta_os" placeholder="0" min="0" oninput="salvarConfigAtual()">
+        </div>
+        <div class="sb-row" style="flex-direction:column;align-items:flex-start;gap:5px;margin-top:8px">
+          <label style="flex:none">Meta de Lucro Mensal</label>
+          <input type="text" id="meta_lucro" placeholder="R$ 0,00" oninput="maskMoney(this);salvarConfigAtual()">
+        </div>
+      </div>
+    </div>
+
+    <!-- TEMPLATES -->
+    <div id="stab_templates" style="display:none">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-clone"></i> Templates de OS</div>
+        <p style="font-size:.75rem;color:var(--gt);margin-bottom:10px;line-height:1.5">Salve configurações de OS recorrentes para reutilizar rapidamente.</p>
+        <div id="templates_list"></div>
+      </div>
+    </div>
+
+    <!-- EMPRESA -->
+    <div id="stab_empresa" style="display:none">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-store"></i> Perfil do Negócio</div>
+        <div class="sb-row" style="flex-direction:column;align-items:flex-start;gap:5px">
+          <label style="flex:none">Nome do Negócio</label>
+          <input type="text" id="cfg_nome_negocio" placeholder="Ex: Fênix Tech" oninput="salvarConfigAtual()">
+        </div>
+        <div class="sb-row" style="margin-top:8px">
+          <label>Tipo de atividade</label>
+          <select id="cfg_atividade" onchange="salvarConfigAtual()" style="flex:0 0 140px">
+            <option value="misto">Misto</option>
+            <option value="comercio">Comércio</option>
+            <option value="servico">Serviço</option>
+          </select>
+        </div>
+        <div class="sb-row" style="margin-top:4px">
+          <label>Regime padrão</label>
+          <select id="cfg_regime_padrao" onchange="setRegime(this.value);salvarConfigAtual()" style="flex:0 0 140px">
+            <option value="simples">Simples Nacional</option>
+            <option value="mei">MEI</option>
+            <option value="carneo">Carnê-Leão</option>
+            <option value="manual">Manual</option>
+          </select>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-building"></i> Multi-empreendimento</div>
+        <button class="btn btn-ghost" style="width:100%;margin-bottom:8px" onclick="adicionarEmpresa()">
+          <i class="fa-solid fa-plus"></i> Nova Empresa
+        </button>
+        <button class="btn btn-danger" style="width:100%;margin-bottom:8px" onclick="deletarEmpresaAtiva()">
+          <i class="fa-solid fa-trash"></i> Remover Empresa Atual
+        </button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><i class="fa-solid fa-rotate"></i> Sistema</div>
+        <button class="btn btn-ghost" style="width:100%;margin-bottom:8px" onclick="abrirOnboarding()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Refazer Configuração Inicial
+        </button>
+        <button class="btn btn-danger" style="width:100%" onclick="resetTudo()">
+          <i class="fa-solid fa-trash"></i> Apagar Todos os Dados
+        </button>
+      </div>
+    </div>
+
+  </div>
+  <div class="sidebar-footer">
+    <button class="btn btn-primary" style="width:100%" onclick="fecharSidebar()">
+      <i class="fa-solid fa-check"></i> Salvar e Fechar
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL ARQUIVO OS ═══════════ -->
+<div class="modal-ov" id="modal_arquivo">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2><i class="fa-solid fa-database" style="color:var(--p)"></i> Arquivo de OS</h2>
+      <button class="modal-x" onclick="fecharArquivo()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-tb">
+      <div class="srch"><i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="search_os" placeholder="Buscar por cliente, OS, valor..." oninput="renderLista()">
+      </div>
+      <select class="fsel" id="filter_saude" onchange="renderLista()">
+        <option value="">Todas as margens</option>
+        <option value="Saudável">🟢 Saudável</option>
+        <option value="Apertado">🟡 Apertado</option>
+        <option value="Perigoso">🔴 Perigoso</option>
+      </select>
+      <div class="mact">
+        <button class="mbtn mbtn-imp" onclick="document.getElementById('file_import').click()"><i class="fa-solid fa-file-import"></i> Importar</button>
+        <button class="mbtn mbtn-exp" onclick="exportarBanco()"><i class="fa-solid fa-file-export"></i> Exportar</button>
+        <button class="mbtn mbtn-del" onclick="limparBanco()"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="db-stats">
+        <div class="db-stat"><div class="sv" id="stat_total">0</div><div class="sl">Total OS</div></div>
+        <div class="db-stat"><div class="sv" id="stat_vol">R$ 0</div><div class="sl">Volume Total</div></div>
+        <div class="db-stat"><div class="sv" id="stat_med">R$ 0</div><div class="sl">Ticket Médio</div></div>
+        <div class="db-stat"><div class="sv" id="stat_lucro_total">R$ 0</div><div class="sl">Lucro Acumulado</div></div>
+      </div>
+      <div class="os-list" id="os_list"></div>
+    </div>
+    <div class="modal-ft">
+      <span id="lista_info">0 registros</span>
+      <div class="pag" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL RELATÓRIO ═══════════ -->
+<div class="modal-ov" id="modal_relatorio">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2><i class="fa-solid fa-chart-bar" style="color:var(--p)"></i> Relatório Financeiro</h2>
+      <button class="modal-x" onclick="document.getElementById('modal_relatorio').classList.remove('open')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="rel-period">
+        <div class="rp-field"><label>De</label><input type="date" id="rel_de" onchange="renderRelatorio()"></div>
+        <div class="rp-field"><label>Até</label><input type="date" id="rel_ate" onchange="renderRelatorio()"></div>
+        <button class="mbtn mbtn-exp" onclick="exportarRelatorio()" style="align-self:flex-end"><i class="fa-solid fa-file-export"></i> Exportar</button>
+      </div>
+      <!-- Metas -->
+      <div class="rel-metas" id="rel_metas" style="margin-top:14px"></div>
+      <!-- Stats -->
+      <div class="rel-stats">
+        <div class="rel-stat"><div class="rsv" id="rel_os_cnt">0</div><div class="rsl">OS no período</div></div>
+        <div class="rel-stat"><div class="rsv" id="rel_fat">R$ 0</div><div class="rsl">Faturamento</div></div>
+        <div class="rel-stat"><div class="rsv" id="rel_lucro">R$ 0</div><div class="rsl">Lucro Total</div></div>
+        <div class="rel-stat"><div class="rsv" id="rel_imp">R$ 0</div><div class="rsl">Impostos</div></div>
+        <div class="rel-stat"><div class="rsv" id="rel_ticket">R$ 0</div><div class="rsl">Ticket Médio</div></div>
+        <div class="rel-stat"><div class="rsv" id="rel_margem">0%</div><div class="rsl">Margem Média</div></div>
+      </div>
+      <div id="rel_lista"></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file_import" accept=".json" style="display:none" onchange="importarJSON(this)">
+<div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toast_msg"></span></div>
+
+<script src="db.js"></script>
+<script src="app.js"></script>
+
+
+</body>
+</html>
