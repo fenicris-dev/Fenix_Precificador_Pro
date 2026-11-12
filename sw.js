@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
-   FÊNIX v4.1 — sw.js
+   FÊNIX v4.3 — sw.js
    Service Worker — Cache First + Offline Support
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'fenix-v4.1';
+const CACHE_NAME = 'fenix-v4.3';
 
 const RESOURCES = [
   './',
@@ -14,6 +14,9 @@ const RESOURCES = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './icon-maskable-192.png',
+  './icon-maskable-512.png',
+  './apple-touch-icon.png',
   'https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',

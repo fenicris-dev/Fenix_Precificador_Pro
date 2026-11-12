@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fênix Precificador v4.1</title>
+<title>Fênix Precificação Pro v4.3</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#041273">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Precificador">
-<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="Precificação Pro">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -36,12 +36,12 @@
 <!-- ═══════════ HEADER ═══════════ -->
 <header class="site-header">
   <div class="logo-wrap">
-    <div class="logo-icon">🔥</div>
+    <img class="logo-icon" src="icon-192.png" alt="Fênix" style="width:44px;height:44px;border-radius:10px;background:none;padding:0;object-fit:cover">
     <div class="logo-text">
-      <h1>Fênix</h1>
-      <span>Precificação Inteligente</span>
+      <h1>Precificação Pro</h1>
+      <span>Fênix · Mais controle, melhores resultados</span>
     </div>
-    <span class="badge-v">v4.1</span>
+    <span class="badge-v">v4.3</span>
   </div>
   <div class="header-actions">
     <!-- Seletor de empresa -->
@@ -530,14 +530,20 @@
         <div class="sidebar-section-title"><i class="fa-solid fa-lock"></i> Despesas Fixas Mensais</div>
         <p style="font-size:.75rem;color:var(--gt);margin-bottom:10px;line-height:1.5">Preencha os valores mensais. O sistema rateará automaticamente por OS.</p>
         <div id="despesas_fixas_list"></div>
-        <div class="dep-total">
-          <span>Total Fixo Mensal:</span><span id="dep_total_fixas">R$ 0,00</span>
+        <div class="dep-total" style="background:rgba(22,160,133,.06);border-color:rgba(22,160,133,.15)">
+          <span style="color:var(--ci)"><i class="fa-solid fa-divide"></i> Custo Mensal Equivalente:</span>
+          <span id="dep_total_fixas" style="color:var(--ci)">R$ 0,00</span>
         </div>
-        <div class="dep-total" style="margin-top:4px;background:rgba(22,160,133,.06);border-color:rgba(22,160,133,.15)">
-          <span style="color:var(--ci)">Custo Fixo por OS:</span><span id="dep_por_os" style="color:var(--ci)">R$ 0,00</span>
+        <div class="dep-total" style="margin-top:4px;background:rgba(39,174,96,.06);border-color:rgba(39,174,96,.15)">
+          <span style="color:var(--acc)"><i class="fa-solid fa-file-invoice"></i> Custo por OS (<span id="dep_os_mes_label">20</span> OS/mês):</span>
+          <span id="dep_por_os" style="color:var(--acc)">R$ 0,00</span>
         </div>
         <div class="dep-total" style="margin-top:4px;background:rgba(4,18,115,.04)">
-          <span>Custo Fixo Anual:</span><span id="dep_total_anual">R$ 0,00</span>
+          <span><i class="fa-solid fa-calendar"></i> Projeção Anual:</span>
+          <span id="dep_total_anual">R$ 0,00</span>
+        </div>
+        <div class="dep-total" style="margin-top:4px;font-size:.72rem;opacity:.7">
+          <span>💡 Valores anuais/semestrais são convertidos automaticamente para mensal</span>
         </div>
         <button class="add-dep-btn" onclick="adicionarDespesaFixa()"><i class="fa-solid fa-plus"></i> Adicionar despesa fixa</button>
       </div>

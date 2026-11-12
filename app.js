@@ -45,15 +45,29 @@ var CONTAS_PADRAO = [
   { id:14, nome:'Distribuição de Lucros',            grupo:'Pessoal',        pct:5,  cor:'#27ae60' },
 ];
 var DESPESAS_FIXAS_PADRAO = [
-  { id:1, nome:'Aluguel',              valor:0, _input:'' },
-  { id:2, nome:'Energia Elétrica',     valor:0, _input:'' },
-  { id:3, nome:'Água',                 valor:0, _input:'' },
-  { id:4, nome:'Internet / Telefone',  valor:0, _input:'' },
-  { id:5, nome:'Pró-labore',           valor:0, _input:'' },
-  { id:6, nome:'Contador',             valor:0, _input:'' },
-  { id:7, nome:'IPVA / Licenciamento', valor:0, _input:'' },
-  { id:8, nome:'Software / Assinaturas',valor:0,_input:'' },
+  { id:1,  nome:'Aluguel',               valor:0, _input:'', rec:'mensal'    },
+  { id:2,  nome:'Energia Elétrica',      valor:0, _input:'', rec:'mensal'    },
+  { id:3,  nome:'Água',                  valor:0, _input:'', rec:'mensal'    },
+  { id:4,  nome:'Internet / Telefone',   valor:0, _input:'', rec:'mensal'    },
+  { id:5,  nome:'Pró-labore',            valor:0, _input:'', rec:'mensal'    },
+  { id:6,  nome:'Contador',              valor:0, _input:'', rec:'mensal'    },
+  { id:7,  nome:'IPVA / Licenciamento',  valor:0, _input:'', rec:'anual'     },
+  { id:8,  nome:'Software / Assinaturas',valor:0, _input:'', rec:'mensal'    },
+  { id:9,  nome:'IPTU',                  valor:0, _input:'', rec:'anual'     },
+  { id:10, nome:'Seguro',                valor:0, _input:'', rec:'anual'     },
+  { id:11, nome:'Licença / Alvará',      valor:0, _input:'', rec:'anual'     },
+  { id:12, nome:'Manutenção Veículo',    valor:0, _input:'', rec:'mensal'    },
 ];
+
+// Divisores por recorrência
+var REC_DIVISOR = { mensal:1, trimestral:3, semestral:6, anual:12, unica:1 };
+var REC_LABEL   = { mensal:'Mensal', trimestral:'Trimestral', semestral:'Semestral', anual:'Anual', unica:'Única vez' };
+
+function valorMensalEquivalente(d) {
+  var v = parseMoney(d._input) || d.valor || 0;
+  var div = REC_DIVISOR[d.rec||'mensal'] || 1;
+  return v / div;
+}
 var DESPESAS_VAR_PADRAO = [
   { id:1, nome:'Comissão de Vendas (%fat)', valor:0, tipo:'perc', _input:'' },
   { id:2, nome:'Insumos / Consumíveis',     valor:0, tipo:'valor',_input:'' },
@@ -159,7 +173,7 @@ function calcRateioAuto() {
   var osMes = S.config.os_mes||20;
   var infra=0, prolabore=0;
   S.despesasFixas.forEach(function(d){
-    var v=parseMoney(d._input)||d.valor||0;
+    var v = valorMensalEquivalente(d);
     if(d.nome.toLowerCase().includes('pró-labore')||d.nome.toLowerCase().includes('prolabore')) prolabore+=v;
     else infra+=v;
   });
@@ -167,7 +181,8 @@ function calcRateioAuto() {
 }
 
 function totalDespesasFixas() {
-  return S.despesasFixas.reduce(function(a,d){ return a+(parseMoney(d._input)||d.valor||0); },0);
+  // Retorna total mensal equivalente (já convertido de anual/semestral etc)
+  return S.despesasFixas.reduce(function(a,d){ return a+valorMensalEquivalente(d); },0);
 }
 
 /* ════════════════════════════════════════════
@@ -634,11 +649,18 @@ function renderDespesasList() { renderDespesasFixas(); renderDespesasVar(); upda
 function renderDespesasFixas() {
   var cont=el('despesas_fixas_list'); if(!cont) return;
   cont.innerHTML=S.despesasFixas.map(function(d,i){
-    return '<div class="dep-item">'
-      +'<span class="dep-item-nome">'+d.nome+'</span>'
+    var recOpts=['mensal','trimestral','semestral','anual','unica'];
+    var selHtml='<select class="dep-rec-sel" onchange="S.despesasFixas['+i+'].rec=this.value;updateDespesasTotais();liveCalc()">'
+      +recOpts.map(function(r){ return '<option value="'+r+'"'+(d.rec===r?' selected':'')+'>'+REC_LABEL[r]+'</option>'; }).join('')
+      +'</select>';
+    var mensal=valorMensalEquivalente(d);
+    var hint=(d.rec&&d.rec!=='mensal'&&mensal>0)?'<span class="dep-rec-hint">≈ '+fmt(mensal)+'/mês</span>':'';
+    return '<div class="dep-item dep-item-full">'
+      +'<div class="dep-item-info"><span class="dep-item-nome">'+d.nome+'</span>'+hint+'</div>'
       +'<div class="dep-item-val"><input type="text" placeholder="R$ 0,00" value="'+(d._input||'')+'" '
       +'oninput="maskMoney(this);S.despesasFixas['+i+']._input=this.value;updateDespesasTotais();liveCalc()" '
       +'style="text-align:right;font-size:.82rem;padding:5px 8px"></div>'
+      +selHtml
       +'<button class="dep-del" onclick="deletarDespesaFixa('+i+')"><i class="fa-solid fa-trash"></i></button>'
       +'</div>';
   }).join('');
@@ -660,15 +682,23 @@ function renderDespesasVar() {
 }
 
 function updateDespesasTotais() {
-  var t=totalDespesasFixas(), osMes=S.config.os_mes||20;
-  if(el('dep_total_fixas')) el('dep_total_fixas').innerText=fmt(t);
-  if(el('dep_por_os'))      el('dep_por_os').innerText=fmt(t/osMes);
-  if(el('dep_total_anual')) el('dep_total_anual').innerText=fmtS(t*12);
+  var tMensal=totalDespesasFixas(), osMes=S.config.os_mes||20;
+  // Total real (soma dos valores informados, sem conversão)
+  var tReal=S.despesasFixas.reduce(function(a,d){ return a+(parseMoney(d._input)||d.valor||0); },0);
+  if(el('dep_total_fixas'))    el('dep_total_fixas').innerText=fmt(tMensal);
+  if(el('dep_por_os'))         el('dep_por_os').innerText=fmt(tMensal/osMes);
+  if(el('dep_total_anual'))    el('dep_total_anual').innerText=fmtS(tMensal*12);
+  if(el('dep_total_real'))     el('dep_total_real').innerText=fmt(tReal);
+  if(el('dep_os_mes_label'))   el('dep_os_mes_label').innerText=osMes;
 }
 
 function adicionarDespesaFixa() {
   var nome=prompt('Nome da despesa:'); if(!nome) return;
-  S.despesasFixas.push({id:genUid(),nome:nome,valor:0,_input:''});
+  var recOpts='1=Mensal, 2=Trimestral, 3=Semestral, 4=Anual, 5=Única vez';
+  var recNum=prompt('Recorrência? '+recOpts,'1')||'1';
+  var recMap={'1':'mensal','2':'trimestral','3':'semestral','4':'anual','5':'unica'};
+  var rec=recMap[recNum]||'mensal';
+  S.despesasFixas.push({id:genUid(),nome:nome,valor:0,_input:'',rec:rec});
   renderDespesasFixas();
 }
 function adicionarDespesaVar() {
@@ -719,7 +749,7 @@ function salvarConfigAtual() {
     DB.salvarEmpresa(S.empresaAtiva);
     DB.salvarConfig(S.empresaAtiva.id,{
       geral:S.config, contas:S.contas,
-      despesasFixas:S.despesasFixas.map(function(d){ return Object.assign({},d,{valor:parseMoney(d._input)||d.valor}); }),
+      despesasFixas:S.despesasFixas.map(function(d){ return Object.assign({},d,{valor:parseMoney(d._input)||d.valor, rec:d.rec||'mensal'}); }),
       despesasVar:S.despesasVar.map(function(d){ return Object.assign({},d,{valor:parseMoney(d._input)||d.valor}); }),
       metas:S.metas, simplexAliq:SIMPLES_ALIQ, regime:S.regime,
     });
@@ -886,7 +916,7 @@ async function salvarOS() {
   if(!S.resultado){ showToast('Calcule antes de salvar','error'); return; }
   var r=S.resultado;
   var os={
-    versao:'4.1', osNum:r.osNum, data:r.osData, geradoEm:r.geradoEm,
+    versao:'4.3', osNum:r.osNum, data:r.osData, geradoEm:r.geradoEm,
     cliente:{nome:r.cliente||'',whatsapp:r.clienteTel||''}, descricao:r.osDesc||'',
     custos:{cmv:r.cmv,mob:r.mob,mobPropria:r.mobPropria,insumos:r.insumos,infra:r.infra,prolabore:r.prolabore,total:r.custoTotal},
     comissao:{valor:r.vComis,base:r.baseLabel,baseValor:r.baseComis},
@@ -947,7 +977,7 @@ function carregarOSeDuplicar(uid) {
 
 async function exportarBanco() {
   if(!S.banco.length){ showToast('Nenhuma OS para exportar','error'); return; }
-  var b=new Blob([JSON.stringify({versao:'4.1',exportadoEm:new Date().toISOString(),total:S.banco.length,os:S.banco},null,2)],{type:'application/json'});
+  var b=new Blob([JSON.stringify({versao:'4.3',exportadoEm:new Date().toISOString(),total:S.banco.length,os:S.banco},null,2)],{type:'application/json'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(b);
   a.download='fenix_'+(S.empresaAtiva.nome||'banco').replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.json';
   a.click(); URL.revokeObjectURL(a.href); showToast(S.banco.length+' OS exportadas!','success');
@@ -1142,7 +1172,7 @@ function gerarPDF() {
   doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(22);
   doc.text((S.empresaAtiva?S.empresaAtiva.nome:'FÊNIX'),15,18);
   doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(170,185,255);
-  doc.text('Precificação Inteligente v4.1',15,26);
+  doc.text('Precificação Pro v4.3',15,26);
   doc.setTextColor(255,255,255); doc.setFontSize(8.5);
   doc.text('OS: '+r.osNum,W-15,13,{align:'right'});
   doc.text('Data: '+fmtD(r.osData),W-15,20,{align:'right'});
@@ -1311,6 +1341,10 @@ async function carregarEmpresa(empresaId) {
   S.contas       = cfg.contas         || JSON.parse(JSON.stringify(CONTAS_PADRAO));
   S.despesasFixas= cfg.despesasFixas  || JSON.parse(JSON.stringify(DESPESAS_FIXAS_PADRAO));
   S.despesasVar  = cfg.despesasVar    || JSON.parse(JSON.stringify(DESPESAS_VAR_PADRAO));
+  // Migração v4.2: despesas fixas antigas sem recorrência
+  (S.despesasFixas||[]).forEach(function(d){
+    if(!d.rec){ d.rec = /ipva|iptu|seguro|licen|alvar|cft|crea|cfc/i.test(d.nome||'') ? 'anual' : 'mensal'; }
+  });
   S.metas        = cfg.metas          || { faturamento:0, os_qtd:0, lucro:0 };
   if(cfg.simplexAliq) SIMPLES_ALIQ = cfg.simplexAliq;
   S.regime       = cfg.regime         || (S.empresaAtiva&&S.empresaAtiva.regime) || 'simples';
